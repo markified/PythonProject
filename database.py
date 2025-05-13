@@ -12,7 +12,7 @@ class Database:
             host='localhost',
             user='root',
             password='',
-            database='vehicle_monitoring'
+            database='vvm_db'
         )
 
     def _ensure_connection(self):
