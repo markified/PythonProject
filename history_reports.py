@@ -32,39 +32,26 @@ sidebar = tk.Frame(root, width=210, bg="#1976d2")
 sidebar.pack(side=tk.LEFT, fill=tk.Y)
 
 def sidebar_action(name):
-    if name == "Dashboard":
-        root.destroy()
-        subprocess.Popen([sys.executable, "dashboard.py"])
-    elif name == "Vehicle Registry":
-        root.destroy()
-        subprocess.Popen([sys.executable, "violation_detector.py"])
-    elif name == "Record":
+    if name == "Reports":
+        pass  # Already on this page
+    elif name == "Violations":
         root.destroy()
         subprocess.Popen([sys.executable, "record&tracking.py"])
     elif name == "Payments":
         root.destroy()
         subprocess.Popen([sys.executable, "payment.py"])
-    elif name == "History Reports":
-        pass  # Already on this page
-    elif name == "Blacklist":
-        root.destroy()
-        subprocess.Popen([sys.executable, "blacklist.py"])
-    elif name == "Violation Reports":
-        root.destroy()
-        subprocess.Popen([sys.executable, "violation_reports.py"])
+    elif name == "Drivers":
+        messagebox.showinfo("Drivers", "Driver management coming soon.")
     elif name == "Logout":
         root.destroy()
     else:
         messagebox.showinfo("Sidebar Clicked", f"You clicked: {name}")
 
 sidebar_items = [
-    ("Dashboard", "\u2302"),
-    ("Vehicle Registry", "\u26FD"),
-    ("Record", "\U0001F50E"),
+    ("Reports", "\U0001F4C8"),
+    ("Violations", "\U0001F697"),
     ("Payments", "\U0001F4B3"),
-    ("History Reports", "\U0001F4C8"),
-    ("Blacklist", "\u26D4"),
-    ("Violation Reports", "\U0001F4C4"),
+    ("Drivers", "\U0001F464"),
     ("Logout", "\u274C")
 ]
 

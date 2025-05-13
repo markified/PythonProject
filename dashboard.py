@@ -1,10 +1,18 @@
+"""
+Project Objective:
+- Vehicle registration and owner details
+- Record and track violations (speeding, illegal parking, etc.)
+- Fine payment processing
+- Violation history and reports
+- License suspension and blacklist management
+- Generate violation reports
+"""
+
 import tkinter as tk
 from tkinter import ttk, BOTH, LEFT, RIGHT, Y, X, TOP, BOTTOM, Frame, Label, messagebox
 import subprocess
 import sys
 import mysql.connector
-
-from AlertSystem import AlertSystem
 from database import (
     get_violation_statistics,
     get_recent_violations,
@@ -52,29 +60,34 @@ def show_dashboard():
     root.configure(bg="#f7faff")
 
     # Initialize AlertSystem and set root
-    alert_system = AlertSystem()
-    alert_system.set_root(root)
+
 
     # Sidebar
     sidebar = Frame(root, width=210, bg="#1976d2")
     sidebar.pack(side=LEFT, fill=Y)
 
     def sidebar_action(name):
-        if name == "Home":
+        if name == "Dashboard":
             root.destroy()
             subprocess.Popen([sys.executable, "dashboard.py"])
-        elif name == "Violations":
+        elif name == "Vehicle Registry":
             root.destroy()
             subprocess.Popen([sys.executable, "violation_detector.py"])
-        elif name == "Alerts":
-            alert_system.show_alerts()
-        elif name == "Driver Analytics":
+        elif name == "Record":
             root.destroy()
-            subprocess.Popen([sys.executable, "driver_analytics.py"])
-        elif name == "Training":
-            messagebox.showinfo("Training", "Training functionality coming soon.")
-        elif name == "Reports":
-            messagebox.showinfo("Reports", "Reports functionality coming soon.")
+            subprocess.Popen([sys.executable, "record&tracking.py"])
+        elif name == "Payments":
+            root.destroy()
+            subprocess.Popen([sys.executable, "payment.py"])
+        elif name == "History Reports":
+            root.destroy()
+            subprocess.Popen([sys.executable, "history_reports.py"])
+        elif name == "Blacklist":
+            root.destroy()      
+            subprocess.Popen([sys.executable, "blacklist.py"])
+        elif name == "Violation Reports":
+            root.destroy()
+            subprocess.Popen([sys.executable, "violation_reports.py"])    
         elif name == "Logout":
             root.destroy()
             subprocess.Popen([sys.executable, "auth.py"])
@@ -82,12 +95,13 @@ def show_dashboard():
             messagebox.showinfo("Sidebar Clicked", f"You clicked: {name}")
 
     sidebar_items = [
-        ("Home", "\u2302"),
-        ("Violations", "\U0001F697"),
-        ("Alerts", "\u26A0"),
-        ("Driver Analytics", "\U0001F50E"),
-        ("Training Woduns", "\U0001F4CA"),
-        ("Reports", "\U0001F552"),
+        ("Dashboard", "\u2302"),
+        ("Vehicle Registry", "\u26FD"),
+        ("Record", "\U0001F50E"),
+        ("Payments", "\U0001F4B3"),
+        ("History Reports", "\U0001F4C8"),
+        ("Blacklist", "\u26D4"),
+        ("Violation Reports", "\U0001F4C4"),
         ("Logout", "\u274C")
     ]
 
