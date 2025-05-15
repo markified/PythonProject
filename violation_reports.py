@@ -7,16 +7,73 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import subprocess
 import sys
+import mysql.connector
 
 # Sample data for demonstration (replace with real data as needed)
-violation_reports = [
-    {"report_id": "VR001", "driver_name": "John Doe", "vehicle_id": "A123", "violation": "Speeding", "date": "2024-05-01", "fine": 500, "status": "Paid"},
-    {"report_id": "VR002", "driver_name": "Jane Smith", "vehicle_id": "B456", "violation": "Illegal Parking", "date": "2024-05-03", "fine": 300, "status": "Unpaid"},
-    {"report_id": "VR003", "driver_name": "Carlos Reyes", "vehicle_id": "C789", "violation": "Signal Violation", "date": "2024-05-05", "fine": 400, "status": "Paid"},
-    {"report_id": "VR004", "driver_name": "Fatima Khan", "vehicle_id": "D321", "violation": "Speeding", "date": "2024-05-07", "fine": 200, "status": "Unpaid"},
-]
+violation_reports = []
+
+def fetch_violation_reports_from_db():
+    try:
+        conn = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='vvm_db'
+        )
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                p.payment_id, 
+                p.owner_name, 
+                v.vehicle_id, 
+                p.violation_type, 
+                DATE_FORMAT(p.timestamp, '%Y-%m-%d'), 
+                p.amount, 
+                p.status 
+            FROM payments p
+            LEFT JOIN vehicles v ON v.owner_name = p.owner_name
+            ORDER BY p.timestamp DESC
+            LIMIT 100
+        """)
+        rows = cursor.fetchall()
+        # Fetch suspended and blacklisted drivers
+        cursor.execute("""
+            SELECT driver_name, plate_number, status
+            FROM blacklist
+            WHERE status IN ('Suspended', 'Blacklisted')
+        """)
+        bl_rows = cursor.fetchall()
+        conn.close()
+        reports = [
+            {
+                "report_id": row[0],
+                "driver_name": row[1],
+                "vehicle_id": row[2] if row[2] is not None else "",
+                "violation": row[3],
+                "date": row[4],
+                "fine": row[5],
+                "status": row[6]
+            }
+            for row in rows
+        ]
+        # Add suspended/blacklisted as extra rows
+        for bl in bl_rows:
+            reports.append({
+                "report_id": "",
+                "driver_name": bl[0],
+                "vehicle_id": bl[1],
+                "violation": "",
+                "date": "",
+                "fine": "",
+                "status": bl[2]
+            })
+       
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Failed to fetch violation reports:\n{e}")
+        return []
 
 def populate_table():
+    violation_reports = fetch_violation_reports_from_db()
     for i in tree.get_children():
         tree.delete(i)
     for v in violation_reports:
@@ -24,9 +81,10 @@ def populate_table():
 
 def export_report():
     try:
-        with open("violation_report_export.csv", "w") as f:
+        export_data = fetch_violation_reports_from_db()
+        with open("violation_report_export.csv", "w", encoding="utf-8") as f:
             f.write("Report ID,Driver Name,Vehicle ID,Violation,Date,Fine,Status\n")
-            for v in violation_reports:
+            for v in export_data:
                 f.write(f'{v["report_id"]},{v["driver_name"]},{v["vehicle_id"]},{v["violation"]},{v["date"]},{v["fine"]},{v["status"]}\n')
         messagebox.showinfo("Export", "Violation report exported as violation_report_export.csv")
     except Exception as e:
@@ -64,6 +122,7 @@ def sidebar_action(name):
         pass  # Already on this page
     elif name == "Logout":
         root.destroy()
+        subprocess.Popen([sys.executable, "auth.py"])
     else:
         messagebox.showinfo("Sidebar Clicked", f"You clicked: {name}")
 

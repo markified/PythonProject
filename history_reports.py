@@ -142,6 +142,7 @@ def sidebar_action(name):
         subprocess.Popen([sys.executable, "violation_reports.py"])
     elif name == "Logout":
         root.destroy()
+        subprocess.Popen([sys.executable, "auth.py"])
     else:
         messagebox.showinfo("Sidebar Clicked", f"You clicked: {name}")
 

@@ -52,6 +52,7 @@ def run_gui():
             subprocess.Popen([sys.executable, "violation_reports.py"])
         elif name == "Logout":
             root.destroy()
+            subprocess.Popen([sys.executable, "auth.py"])
         else:
             tk.messagebox.showinfo("Sidebar Clicked", f"You clicked: {name}")
 

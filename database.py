@@ -42,14 +42,15 @@ class Database:
         # Violations table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS violations (
-                violation_id INT AUTO_INCREMENT PRIMARY KEY,
-                vehicle_id VARCHAR(36),
-                violation_type VARCHAR(50),
-                owner_name VARCHAR(20),
-                count INT DEFAULT 0,
-                price INT DEFAULT 0,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (vehicle_id) REFERENCES vehicles(vehicle_id)
+            violation_id INT AUTO_INCREMENT PRIMARY KEY,
+            vehicle_id VARCHAR(36),
+            violation_type VARCHAR(50),
+            owner_name VARCHAR(20),
+            count INT DEFAULT 0,
+            price INT DEFAULT 0,
+            status VARCHAR(20) DEFAULT 'unpaid',
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (vehicle_id) REFERENCES vehicles(vehicle_id)
             )
         """)
         

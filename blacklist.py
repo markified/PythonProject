@@ -59,7 +59,18 @@ def fetch_driver_names_and_plates():
             database='vvm_db'
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT DISTINCT owner_name, Plate_number FROM vehicles")
+        # Only fetch drivers with 3 or more unpaid violations
+        cursor.execute("""
+            SELECT v.owner_name, v.Plate_number
+            FROM vehicles v
+            WHERE v.owner_name IN (
+                SELECT owner_name
+                FROM violations
+                WHERE status = 'Unpaid'
+                GROUP BY owner_name
+                HAVING COUNT(*) >= 3
+            )
+        """)
         rows = cursor.fetchall()
         conn.close()
         driver_names = sorted(set(row[0] for row in rows if row[0]))
@@ -182,6 +193,7 @@ def sidebar_action(name):
         subprocess.Popen([sys.executable, "violation_reports.py"])
     elif name == "Logout":
         root.destroy()
+        subprocess.Popen([sys.executable, "auth.py"])
     else:
         messagebox.showinfo("Sidebar Clicked", f"You clicked: {name}")
 

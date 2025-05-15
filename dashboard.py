@@ -31,24 +31,48 @@ def fetch_dashboard_data():
     except Exception:
         recent = []
     try:
-        todays_violators = get_todays_violators_count()
+        conn = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='vvm_db'
+        )
+        cursor = conn.cursor()
+        # Count unique violators (distinct owner_name) who have at least one unpaid violation
+        cursor.execute("""
+            SELECT COUNT(DISTINCT owner_name)
+            FROM violations
+            WHERE status = 'Unpaid'
+        """)
+        total_violators = cursor.fetchone()[0]
+        # High-risk drivers: owners with 3 or more unpaid violations
+        cursor.execute("""
+            SELECT COUNT(*) FROM (
+                SELECT owner_name
+                FROM violations
+                WHERE status='Unpaid'
+                GROUP BY owner_name
+                HAVING COUNT(*) >= 3
+            ) AS highrisk
+        """)
+        high_risk_drivers = cursor.fetchone()[0]
+        # Blacklisted: count from blacklist table
+        cursor.execute("""
+            SELECT COUNT(*) FROM blacklist WHERE status='Blacklisted'
+        """)
+        blacklisted_total = cursor.fetchone()[0]
+        conn.close()
     except Exception:
-        todays_violators = 0
-    try:
-        high_risk_drivers = get_high_risk_drivers_count()
-    except Exception:
+        total_violators = 0
         high_risk_drivers = 0
-    try:
-        active_alerts = get_active_alerts_count()
-    except Exception:
-        active_alerts = 0
+        blacklisted_total = 0
 
     return {
         "violations": violations,
         "recent": recent,
-        "todays_violators": todays_violators,
+        "todays_violators": total_violators,
         "high_risk_drivers": high_risk_drivers,
-        "active_alerts": active_alerts
+        "blacklisted": blacklisted_total
     }
 
 # Function to show the dashboard
@@ -123,9 +147,9 @@ def show_dashboard():
     stats_row = Frame(main, bg="#f7faff")
     stats_row.pack(fill=X, padx=40, pady=(30, 10))
     for title, value in [
-        ("Today's Violators", data["todays_violators"]),
+        ("Violators", data["todays_violators"]),
         ("High-Risk Drivers", data["high_risk_drivers"]),
-        ("Active Alerts", data["active_alerts"])
+        ("Blacklisted", data["blacklisted"])
     ]:
         stat = Frame(stats_row, bg="#fff", bd=0, relief="ridge", highlightbackground="#1976d2", highlightthickness=2)
         stat.pack(side=LEFT, expand=True, fill=BOTH, padx=12, pady=0)
@@ -145,15 +169,16 @@ def show_dashboard():
 
     # Recent Violations Table
     Label(main, text="Recent Violations", font=("Arial", 16, "bold"), bg="#f7faff", fg="#1976d2").pack(pady=(10, 0))
-    recent_table = ttk.Treeview(main, columns=("ID", "Vehicle ID", "Driver ID", "Type", "Details", "Timestamp"), show="headings", height=7)
+    recent_table = ttk.Treeview(main, columns=("ID", "Vehicle ID", "Violation Type", "Details", "Timestamp", "Driver ID"), show="headings", height=7)
     for col, w in zip(
-        ["ID", "Vehicle ID", "Driver ID", "Type", "Details", "Timestamp"],
-        [50, 120, 100, 120, 200, 180]
+        ["ID", "Vehicle ID", "Violation Type", "Details", "Timestamp", "Driver ID"],
+        [50, 120, 120, 200, 180, 100]
     ):
         recent_table.heading(col, text=col)
         recent_table.column(col, width=w, anchor="center")
     for r in data["recent"]:
-        recent_table.insert("", "end", values=(r[0], r[1], r[5], r[2], r[3], str(r[4])))
+        # r: (violation_id, vehicle_id, violation_type, details, timestamp, driver_id)
+        recent_table.insert("", "end", values=(r[0], r[1], r[2], r[3], str(r[4]), r[5]))
     recent_table.pack(padx=40, pady=(0, 20), fill=X)
 
     # Style for Treeview

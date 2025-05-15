@@ -36,7 +36,7 @@ def sidebar_action(name):
         subprocess.Popen([sys.executable, "payment.py"])
     elif name == "History Reports":
         root.destroy()
-        subprocess.Popen([sys.executable, "reports.py"])
+        subprocess.Popen([sys.executable, "history_reports.py"])
     elif name == "Blacklist":
         root.destroy()
         subprocess.Popen([sys.executable, "blacklist.py"])
@@ -45,6 +45,7 @@ def sidebar_action(name):
         subprocess.Popen([sys.executable, "violation_reports.py"])
     elif name == "Logout":
         root.destroy()
+        subprocess.Popen([sys.executable, "auth.py"])
     else:
         messagebox.showinfo("Sidebar Clicked", f"You clicked: {name}")
 
@@ -79,11 +80,11 @@ title.pack(pady=18)
 frame = tk.Frame(main, bg="#f7faff")
 frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
-columns = ("Driver Name", "Vehicle ID", "Violation Type", "Count")
+columns = ("Driver Name", "Vehicle ID", "Violation Type", "Count", "Price", "Status")
 tree = ttk.Treeview(frame, columns=columns, show='headings', height=12)
 for col in columns:
     tree.heading(col, text=col)
-    tree.column(col, anchor=tk.CENTER, width=180)
+    tree.column(col, anchor=tk.CENTER, width=150)
 tree.pack(fill=tk.BOTH, expand=True)
 
 # Style for Treeview
@@ -467,7 +468,7 @@ def fetch_violations_from_db():
             database='vvm_db'
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT owner_name, vehicle_id, violation_type, count FROM violations")
+        cursor.execute("SELECT owner_name, vehicle_id, violation_type, count, price, status FROM violations")
         rows = cursor.fetchall()
         conn.close()
         return [
@@ -475,7 +476,9 @@ def fetch_violations_from_db():
                 "owner_name": row[0],
                 "vehicle_id": row[1],
                 "violation_type": row[2],
-                "count": row[3]
+                "count": row[3],
+                "price": row[4],
+                "status": row[5] if len(row) > 5 else ""
             }
             for row in rows
         ]
@@ -491,7 +494,9 @@ def populate_table():
         tree.delete(row)
     # Insert all violations
     for v in violations:
-        tree.insert("", tk.END, values=(v["owner_name"], v["vehicle_id"], v["violation_type"], v["count"]))
+        tree.insert("", tk.END, values=(
+            v["owner_name"], v["vehicle_id"], v["violation_type"], v["count"], v.get("price", ""), v.get("status", "")
+        ))
 
 populate_table()
 root.mainloop()

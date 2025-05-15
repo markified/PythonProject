@@ -58,7 +58,7 @@ def mark_as_paid():
     idx = tree.index(selected[0])
     payment = payments[idx]
     payments[idx]["status"] = "Paid"
-    # Update status in database
+    # Update status in payments table and also in violations table
     try:
         conn = mysql.connector.connect(
             host='localhost',
@@ -67,9 +67,15 @@ def mark_as_paid():
             database='vvm_db'
         )
         cursor = conn.cursor()
+        # Update payments table
         cursor.execute(
             "UPDATE payments SET status=%s WHERE payment_id=%s",
             ("Paid", payment["payment_id"])
+        )
+        # Update violations table for the same owner and violation type
+        cursor.execute(
+            "UPDATE violations SET status=%s WHERE owner_name=%s AND violation_type=%s",
+            ("Paid", payment["owner_name"], payment["violation"])
         )
         conn.commit()
         conn.close()
@@ -103,8 +109,8 @@ def fetch_violations_from_db():
             database='vvm_db'
         )
         cursor = conn.cursor()
-        # Only show violation types that exist in the violations table and have a price
-        cursor.execute("SELECT DISTINCT violation_type FROM violations WHERE price IS NOT NULL")
+        # Only show violation types that exist in the violations table, have a price, and are not already paid
+        cursor.execute("SELECT DISTINCT violation_type FROM violations WHERE price IS NOT NULL AND (status IS NULL OR status != 'Paid')")
         rows = cursor.fetchall()
         conn.close()
         # Return as a list of strings for the dropdown
@@ -233,6 +239,7 @@ def sidebar_action(name):
         subprocess.Popen([sys.executable, "violation_reports.py"])
     elif name == "Logout":
         root.destroy()
+        subprocess.Popen([sys.executable, "auth.py"])
     else:
         messagebox.showinfo("Sidebar Clicked", f"You clicked: {name}")
 
