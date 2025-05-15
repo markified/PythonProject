@@ -2,6 +2,7 @@
 import mysql.connector
 from mysql.connector import errorcode
 
+
 class Database:
     def __init__(self):
         self._connect()
@@ -30,12 +31,11 @@ class Database:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS vehicles (
                 vehicle_id VARCHAR(36) PRIMARY KEY,
-                driver_id VARCHAR(20),
-                speed FLOAT,
-                latitude FLOAT,
-                longitude FLOAT,
-                timestamp DATETIME,
-                signal_status VARCHAR(10)
+                owner_name VARCHAR(20),
+                Plate_number VARCHAR(20),
+                MOdel VARCHAR(20),  
+                color VARCHAR(20),
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
         
@@ -45,12 +45,40 @@ class Database:
                 violation_id INT AUTO_INCREMENT PRIMARY KEY,
                 vehicle_id VARCHAR(36),
                 violation_type VARCHAR(50),
-                details TEXT,
-                timestamp DATETIME,
+                owner_name VARCHAR(20),
+                count INT DEFAULT 0,
+                price INT DEFAULT 0,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (vehicle_id) REFERENCES vehicles(vehicle_id)
             )
         """)
         
+        # Payments table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS payments (
+                payment_id INT AUTO_INCREMENT PRIMARY KEY,
+                violation_id INT,
+                violation_type VARCHAR(50),
+                owner_name VARCHAR(20),
+                amount INT,
+                payment_date DATETIME,
+                status VARCHAR(20),
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (violation_id) REFERENCES violations(violation_id)
+            )
+        """)
+        # Blacklist table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS blacklist (
+                blacklist_id VARCHAR(36) PRIMARY KEY,
+                driver_name VARCHAR(20),
+                plate_number VARCHAR(20),
+                reason VARCHAR(100),
+                status VARCHAR(20),
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         # Users table for GUI auth
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -61,130 +89,29 @@ class Database:
         """)
         
         self.connection.commit()
-    
-    
-# Insert vehicle data
-    def insert_vehicle_data(self, data):
-        self._ensure_connection()
-        cursor = self.connection.cursor()
-        query = """
-            INSERT INTO vehicles 
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """
-        cursor.execute(query, (
-            data['vehicle_id'],
-            data['driver_id'],
-            data['speed'],
-            data['location'][0],
-            data['location'][1],
-            data['timestamp'],
-            data['signal_status']
-        ))
-        self.connection.commit()
-# Insert violations
-    def insert_violations(self, vehicle_id, violations):
-        self._ensure_connection()
-        cursor = self.connection.cursor()
-        query = """
-            INSERT INTO violations 
-            (vehicle_id, violation_type, details, timestamp)
-            VALUES (%s, %s, %s, NOW())
-        """
-        for violation in violations:
-            cursor.execute(query, (
-                vehicle_id,
-                violation['type'],
-                violation['details']
-            ))
-        self.connection.commit()
-  # Get violation statistics  
-    def get_violation_stats(self):
-        self._ensure_connection()
-        cursor = self.connection.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT violation_type, COUNT(*) as count 
-            FROM violations 
-            GROUP BY violation_type
-        """)
-        return cursor.fetchall()
-  # Get today's violators count  
-    def get_recent_violations(self, limit=10):
-        self._ensure_connection()
-        cursor = self.connection.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT v.*, vhc.driver_id 
-            FROM violations v
-            JOIN vehicles vhc USING (vehicle_id)
-            ORDER BY timestamp DESC 
-            LIMIT %s
-        """, (limit,))
-        return cursor.fetchall()
-# Get today's violators count
-def get_db_connection():
-    return mysql.connector.connect(
-        host='localhost',
-        user='root',
-        password='',
-        database='vehicle_monitoring'
-    )
-# Get today's violators count
+
+
+# Ensure these functions are defined and exported in this file:
 def get_violation_statistics():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT violation_type, COUNT(*) FROM violations GROUP BY violation_type")
-    result = cursor.fetchall()
-    conn.close()
-    return result
-# Get recent violations
+    db = Database()
+    stats = db.get_violation_stats()
+    # Convert list of dicts to list of tuples for compatibility
+    return [(row['violation_type'], row['count']) for row in stats]
+
 def get_recent_violations(limit=10):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT v.violation_id, v.vehicle_id, v.violation_type, v.details, v.timestamp, vhc.driver_id
-        FROM violations v
-        JOIN vehicles vhc ON v.vehicle_id = vhc.vehicle_id
-        ORDER BY v.timestamp DESC LIMIT %s
-    """, (limit,))
-    result = cursor.fetchall()
-    conn.close()
-    return result
-# Get today's violators count
+    db = Database()
+    rows = db.get_recent_violations(limit)
+    # Convert list of dicts to list of tuples for compatibility
+    return [(r['violation_id'], r['vehicle_id'], r['violation_type'], r['details'], r['timestamp'], r['driver_id']) for r in rows]
+
 def get_todays_violators_count():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT COUNT(DISTINCT vhc.driver_id)
-        FROM violations v
-        JOIN vehicles vhc ON v.vehicle_id = vhc.vehicle_id
-        WHERE DATE(v.timestamp) = CURDATE()
-    """)
-    result = cursor.fetchone()[0]
-    conn.close()
-    return result
-# Get high-risk drivers count
+    db = Database()
+    return db.get_todays_violators_count()
+
 def get_high_risk_drivers_count():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT COUNT(*) FROM (
-            SELECT driver_id, COUNT(*) as vcount
-            FROM vehicles v
-            JOIN violations vl ON v.vehicle_id = vl.vehicle_id
-            GROUP BY driver_id
-            HAVING vcount > 3
-        ) as risky
-    """)
-    result = cursor.fetchone()[0]
-    conn.close()
-    return result
-# Get active alerts count
+    db = Database()
+    return db.get_high_risk_drivers_count()
+
 def get_active_alerts_count():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT COUNT(*) FROM violations
-        WHERE timestamp >= NOW() - INTERVAL 1 HOUR
-    """)
-    result = cursor.fetchone()[0]
-    conn.close()
-    return result
+    db = Database()
+    return db.get_active_alerts_count()

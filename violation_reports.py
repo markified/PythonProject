@@ -56,7 +56,7 @@ def sidebar_action(name):
         subprocess.Popen([sys.executable, "payment.py"])
     elif name == "History Reports":
         root.destroy()
-        subprocess.Popen([sys.executable, "reports.py"])
+        subprocess.Popen([sys.executable, "history_reports.py"])
     elif name == "Blacklist":
         root.destroy()
         subprocess.Popen([sys.executable, "blacklist.py"])
@@ -118,3 +118,31 @@ tk.Button(btn_frame, text="Export Report", command=export_report, bg="#1976d2", 
 
 populate_table()
 root.mainloop()
+
+def add_blacklist():
+    def save():
+        # Replace 'license_no' with 'plate_number'
+        plate_number = entry_plate_number.get().strip()
+        driver_name = entry_driver_name.get().strip()
+        reason = entry_reason.get().strip()
+        if not plate_number or not driver_name or not reason:
+            messagebox.showwarning("Input Error", "All fields are required.", parent=add_win)
+            return
+        # Save to database or list as needed
+        # Example: blacklist.append({"plate_number": plate_number, "driver_name": driver_name, "reason": reason})
+        add_win.destroy()
+
+    add_win = tk.Toplevel(root)
+    add_win.title("Add to Blacklist")
+    add_win.geometry("350x250")
+    add_win.configure(bg="#f7faff")
+    tk.Label(add_win, text="Plate Number:", bg="#f7faff", font=("Arial", 11)).pack(pady=(15, 0))
+    entry_plate_number = tk.Entry(add_win, font=("Arial", 11))
+    entry_plate_number.pack()
+    tk.Label(add_win, text="Driver Name:", bg="#f7faff", font=("Arial", 11)).pack(pady=(10, 0))
+    entry_driver_name = tk.Entry(add_win, font=("Arial", 11))
+    entry_driver_name.pack()
+    tk.Label(add_win, text="Reason:", bg="#f7faff", font=("Arial", 11)).pack(pady=(10, 0))
+    entry_reason = tk.Entry(add_win, font=("Arial", 11))
+    entry_reason.pack()
+    tk.Button(add_win, text="Add", command=save, bg="#1976d2", fg="white", font=("Arial", 11, "bold"), width=12).pack(pady=15)

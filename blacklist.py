@@ -7,47 +7,127 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import subprocess
 import sys
+import uuid
 
-# Sample data for demonstration (replace with real data as needed)
-blacklist = [
-    {"blacklist_id": "BL001", "driver_name": "John Doe", "license_no": "L12345", "reason": "Multiple Violations", "status": "Suspended"},
-    {"blacklist_id": "BL002", "driver_name": "Jane Smith", "license_no": "L54321", "reason": "Unpaid Fines", "status": "Blacklisted"},
-    {"blacklist_id": "BL003", "driver_name": "Carlos Reyes", "license_no": "L67890", "reason": "Fraudulent Documents", "status": "Blacklisted"},
-]
 
 def populate_table():
+    # Fetch all blacklist data from the database and show in the table
+    global blacklist
+    try:
+        import mysql.connector
+        conn = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='vvm_db'
+        )
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS blacklist (
+                blacklist_id VARCHAR(50) PRIMARY KEY,
+                driver_name VARCHAR(100),
+                plate_number VARCHAR(50),
+                reason VARCHAR(255),
+                status VARCHAR(20)
+            )
+        """)
+        cursor.execute("SELECT blacklist_id, driver_name, plate_number, reason, status FROM blacklist")
+        rows = cursor.fetchall()
+        conn.close()
+        for row in rows:
+            blacklist.append({
+                "blacklist_id": row[0],
+                "driver_name": row[1],
+                "plate_number": row[2],
+                "reason": row[3],
+                "status": row[4]
+            })
+    except Exception:
+        pass
     for i in tree.get_children():
         tree.delete(i)
     for b in blacklist:
-        tree.insert("", tk.END, values=(b["blacklist_id"], b["driver_name"], b["license_no"], b["reason"], b["status"]))
+        tree.insert("", tk.END, values=(b["blacklist_id"], b["driver_name"], b["plate_number"], b["reason"], b["status"]))
+
+def fetch_driver_names_and_plates():
+    try:
+        import mysql.connector
+        conn = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='vvm_db'
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT owner_name, Plate_number FROM vehicles")
+        rows = cursor.fetchall()
+        conn.close()
+        driver_names = sorted(set(row[0] for row in rows if row[0]))
+        plate_numbers = sorted(set(row[1] for row in rows if row[1]))
+        return driver_names, plate_numbers
+    except Exception:
+        return [], []
 
 def add_blacklist():
     def save():
-        bid = entry_bid.get().strip()
-        driver = entry_driver.get().strip()
-        license_no = entry_license.get().strip()
+        bid = entry_bid_var.get().strip()
+        driver = driver_var.get().strip()
+        plate_number = plate_var.get().strip()
         reason = entry_reason.get().strip()
         status = status_var.get().strip()
-        if not bid or not driver or not license_no or not reason or not status:
+        if not bid or not driver or not plate_number or not reason or not status:
             messagebox.showwarning("Input Error", "All fields are required.", parent=add_win)
             return
-        blacklist.append({"blacklist_id": bid, "driver_name": driver, "license_no": license_no, "reason": reason, "status": status})
+        # Store in database
+        try:
+            import mysql.connector
+            conn = mysql.connector.connect(
+                host='localhost',
+                user='root',
+                password='',
+                database='vvm_db'
+            )
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS blacklist (
+                    blacklist_id VARCHAR(50) PRIMARY KEY,
+                    driver_name VARCHAR(100),
+                    plate_number VARCHAR(50),
+                    reason VARCHAR(255),
+                    status VARCHAR(20)
+                )
+            """)
+            cursor.execute(
+                "INSERT INTO blacklist (blacklist_id, driver_name, plate_number, reason, status) VALUES (%s, %s, %s, %s, %s)",
+                (bid, driver, plate_number, reason, status)
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            messagebox.showerror("Database Error", f"Failed to save blacklist to database:\n{e}", parent=add_win)
+            return
+        blacklist.append({"blacklist_id": bid, "driver_name": driver, "plate_number": plate_number, "reason": reason, "status": status})
         populate_table()
         add_win.destroy()
+
+    driver_names, plate_numbers = fetch_driver_names_and_plates()
 
     add_win = tk.Toplevel(root)
     add_win.title("Add to Blacklist")
     add_win.geometry("350x350")
     add_win.configure(bg="#f7faff")
     tk.Label(add_win, text="Blacklist ID:", bg="#f7faff", font=("Arial", 11)).pack(pady=(15, 0))
-    entry_bid = tk.Entry(add_win, font=("Arial", 11))
+    entry_bid_var = tk.StringVar(value=str(uuid.uuid4())[:8])
+    entry_bid = tk.Entry(add_win, font=("Arial", 11), textvariable=entry_bid_var, state="readonly")
     entry_bid.pack()
     tk.Label(add_win, text="Driver Name:", bg="#f7faff", font=("Arial", 11)).pack(pady=(10, 0))
-    entry_driver = tk.Entry(add_win, font=("Arial", 11))
-    entry_driver.pack()
-    tk.Label(add_win, text="License No:", bg="#f7faff", font=("Arial", 11)).pack(pady=(10, 0))
-    entry_license = tk.Entry(add_win, font=("Arial", 11))
-    entry_license.pack()
+    driver_var = tk.StringVar()
+    driver_menu = ttk.Combobox(add_win, textvariable=driver_var, values=driver_names, state="readonly", font=("Arial", 11))
+    driver_menu.pack()
+    tk.Label(add_win, text="Plate Number:", bg="#f7faff", font=("Arial", 11)).pack(pady=(10, 0))
+    plate_var = tk.StringVar()
+    plate_menu = ttk.Combobox(add_win, textvariable=plate_var, values=plate_numbers, state="readonly", font=("Arial", 11))
+    plate_menu.pack()
     tk.Label(add_win, text="Reason:", bg="#f7faff", font=("Arial", 11)).pack(pady=(10, 0))
     entry_reason = tk.Entry(add_win, font=("Arial", 11))
     entry_reason.pack()
@@ -94,7 +174,7 @@ def sidebar_action(name):
         subprocess.Popen([sys.executable, "payment.py"])
     elif name == "History Reports":
         root.destroy()
-        subprocess.Popen([sys.executable, "reports.py"])
+        subprocess.Popen([sys.executable, "history_reports.py"])
     elif name == "Blacklist":
         pass  # Already on this page
     elif name == "Violation Reports":
@@ -136,7 +216,7 @@ title.pack(pady=18)
 frame = tk.Frame(main, bg="#f7faff")
 frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
-columns = ("Blacklist ID", "Driver Name", "License No", "Reason", "Status")
+columns = ("Blacklist ID", "Driver Name", "Plate Number", "Reason", "Status")
 tree = ttk.Treeview(frame, columns=columns, show='headings', height=15)
 for col in columns:
     tree.heading(col, text=col)
@@ -155,5 +235,7 @@ btn_frame.pack(pady=(0, 10))
 tk.Button(btn_frame, text="Add to Blacklist", command=add_blacklist, bg="#1976d2", fg="white", font=("Arial", 11, "bold"), width=16).pack(side=tk.LEFT, padx=8)
 tk.Button(btn_frame, text="Remove Selected", command=remove_blacklist, bg="#e74c3c", fg="white", font=("Arial", 11, "bold"), width=16).pack(side=tk.LEFT, padx=8)
 
+# Initialize the blacklist list
+blacklist = []
 populate_table()
 root.mainloop()
