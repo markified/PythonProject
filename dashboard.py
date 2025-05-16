@@ -156,30 +156,61 @@ def show_dashboard():
         Label(stat, text=title, font=("Arial", 14, "bold"), fg="#1976d2", bg="#fff").pack(pady=(18, 0))
         Label(stat, text=str(value), font=("Arial", 32, "bold"), fg="#1565c0", bg="#fff").pack(pady=(5, 18))
 
-    # Violation Statistics Table
-    Label(main, text="Violation Statistics", font=("Arial", 16, "bold"), bg="#f7faff", fg="#1976d2").pack(pady=(10, 0))
-    stats_table = ttk.Treeview(main, columns=("Type", "Count"), show="headings", height=5)
-    stats_table.heading("Type", text="Violation Type")
-    stats_table.heading("Count", text="Count")
-    stats_table.column("Type", width=200, anchor="center")
-    stats_table.column("Count", width=100, anchor="center")
-    for v in data["violations"]:
-        stats_table.insert("", "end", values=(v[0], v[1]))
-    stats_table.pack(padx=40, pady=(0, 10), fill=X)
+    # Violation Record & Tracking Table (replace Violation Statistics Table)
+    Label(main, text="Violation Record & Tracking", font=("Arial", 16, "bold"), bg="#f7faff", fg="#1976d2").pack(pady=(10, 0))
+    columns = ("Driver Name", "Vehicle ID", "Violation Type", "Count", "Price", "Status")
+    violation_table = ttk.Treeview(main, columns=columns, show='headings', height=8)
+    for col in columns:
+        violation_table.heading(col, text=col)
+        violation_table.column(col, anchor="center", width=140)
+    # Fetch violation records from DB (same as record&tracking.py)
+    try:
+        conn = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='vvm_db'
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT owner_name, vehicle_id, violation_type, count, price, status FROM violations")
+        rows = cursor.fetchall()
+        conn.close()
+        for row in rows:
+            violation_table.insert(
+                "", "end",
+                values=(row[0], row[1], row[2], row[3], row[4], row[5] if len(row) > 5 else "")
+            )
+    except Exception:
+        pass
+    violation_table.pack(padx=40, pady=(0, 10), fill=X)
 
-    # Recent Violations Table
-    Label(main, text="Recent Violations", font=("Arial", 16, "bold"), bg="#f7faff", fg="#1976d2").pack(pady=(10, 0))
-    recent_table = ttk.Treeview(main, columns=("ID", "Vehicle ID", "Violation Type", "Details", "Timestamp", "Driver ID"), show="headings", height=7)
-    for col, w in zip(
-        ["ID", "Vehicle ID", "Violation Type", "Details", "Timestamp", "Driver ID"],
-        [50, 120, 120, 200, 180, 100]
-    ):
-        recent_table.heading(col, text=col)
-        recent_table.column(col, width=w, anchor="center")
-    for r in data["recent"]:
-        # r: (violation_id, vehicle_id, violation_type, details, timestamp, driver_id)
-        recent_table.insert("", "end", values=(r[0], r[1], r[2], r[3], str(r[4]), r[5]))
-    recent_table.pack(padx=40, pady=(0, 20), fill=X)
+    # License Suspension & Blacklist Management Table (replace Recent Violations Table)
+    Label(main, text="License Suspension & Blacklist Management", font=("Arial", 16, "bold"), bg="#f7faff", fg="#1976d2").pack(pady=(10, 0))
+    columns_blacklist = ("Blacklist ID", "Driver Name", "Plate Number", "Reason", "Status")
+    blacklist_table = ttk.Treeview(main, columns=columns_blacklist, show='headings', height=7)
+    for col in columns_blacklist:
+        blacklist_table.heading(col, text=col)
+        blacklist_table.column(col, anchor="center", width=160)
+    # Fetch blacklist records from DB (same as blacklist.py)
+    try:
+        conn = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='vvm_db'
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT blacklist_id, driver_name, plate_number, reason, status FROM blacklist")
+        rows = cursor.fetchall()
+        conn.close()
+        for row in rows:
+            blacklist_table.insert(
+                "", "end",
+                values=(row[0], row[1], row[2], row[3], row[4])
+            )
+    except Exception:
+        pass
+    blacklist_table.pack(padx=40, pady=(0, 20), fill=X)
 
     # Style for Treeview
     style = ttk.Style()
