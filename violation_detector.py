@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
@@ -10,14 +9,14 @@ import mysql.connector
 # Sample data for demonstration (replace with real data as needed)S
 
 def run_gui():
-    vehicles = []  # List to store vehicle data
+    vehicles = []
     root = tk.Tk()
     root.title("Vehicle Registration & Owner Details")
-    root.geometry("900x700")
-    root.configure(bg="#f7faff")
+    root.geometry("1000x720")
+    root.configure(bg="#eaf6fb") 
 
     # Sidebar
-    sidebar = tk.Frame(root, width=210, bg="#1976d2")
+    sidebar = tk.Frame(root, width=220, bg="#1565c0") 
     sidebar.pack(side=tk.LEFT, fill=tk.Y)
 
     def sidebar_action(name):
@@ -25,7 +24,7 @@ def run_gui():
             root.destroy()
             subprocess.Popen([sys.executable, "dashboard.py"])
         elif name == "Vehicle Registry":
-            pass  # Already on this page
+            pass  
         elif name == "Record":
             root.destroy()
             subprocess.Popen([sys.executable, "record&tracking.py"])
@@ -60,24 +59,30 @@ def run_gui():
 
     for text, icon in sidebar_items:
         lbl = tk.Label(
-            sidebar, text=f"{icon} {text}", anchor="w", bg="#1976d2", fg="#fff",
-            font=("Arial", 13), padx=24, pady=15, justify=tk.LEFT, cursor="hand2"
+            sidebar, text=f"{icon} {text}", anchor="w", bg="#1565c0", fg="#fff",
+            font=("Segoe UI", 13, "bold"), padx=28, pady=16, justify=tk.LEFT, cursor="hand2"
         )
         lbl.pack(fill=tk.X)
-        lbl.bind("<Enter>", lambda e, l=lbl: l.config(bg="#1565c0"))
-        lbl.bind("<Leave>", lambda e, l=lbl: l.config(bg="#1976d2"))
+        lbl.bind("<Enter>", lambda e, l=lbl: l.config(bg="#1976d2"))
+        lbl.bind("<Leave>", lambda e, l=lbl: l.config(bg="#1565c0"))
         lbl.bind("<Button-1>", lambda e, name=text: sidebar_action(name))
 
     # Main content
-    main = tk.Frame(root, bg="#f7faff")
+    main = tk.Frame(root, bg="#eaf6fb")
     main.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
     # Title
-    tk.Label(main, text="Vehicle Registration & Owner Details", font=("Arial", 16, "bold"), bg="#f7faff", fg="#222").pack(anchor="nw", padx=18, pady=(18, 0))
+    tk.Label(
+        main,
+        text="Vehicle Registration & Owner Details",
+        font=("Segoe UI", 20, "bold"),
+        bg="#eaf6fb",
+        fg="#1565c0"
+    ).pack(anchor="center", padx=28, pady=(28, 0)) 
 
     # Table Frame
-    table_frame = tk.Frame(main, bg="#f7faff")
-    table_frame.pack(fill=tk.BOTH, expand=True, padx=18, pady=18)
+    table_frame = tk.Frame(main, bg="#eaf6fb")
+    table_frame.pack(fill=tk.BOTH, expand=True, padx=28, pady=28)
 
     columns = ("vehicle_id", "owner_name", "plate_number", "model", "color")
     tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=15)
@@ -93,11 +98,11 @@ def run_gui():
     tree.column("color", anchor=tk.CENTER, width=100)
     tree.pack(fill=tk.BOTH, expand=True)
 
-    # Style for Treeview
+    # Style for Treeview (Payment style: blue header, white rows)
     style = ttk.Style()
     style.theme_use("clam")
-    style.configure("Treeview.Heading", font=("Arial", 12, "bold"), background="#1976d2", foreground="#fff")
-    style.configure("Treeview", font=("Arial", 11), rowheight=28, background="#fff", fieldbackground="#fff")
+    style.configure("Treeview.Heading", font=("Segoe UI", 12, "bold"), background="#1976d2", foreground="#fff")
+    style.configure("Treeview", font=("Segoe UI", 11), rowheight=28, background="#fff", fieldbackground="#fff")
 
     def fetch_vehicles_from_db():
         try:
@@ -309,6 +314,25 @@ def run_gui():
             if not v_id or not owner or not plate or not model or not color:
                 tk.messagebox.showwarning("Input Error", "All fields are required.", parent=edit_win)
                 return
+            try:
+                conn = mysql.connector.connect(
+                    host='localhost',
+                    user='root',
+                    password='',
+                    database='vvm_db'
+                )
+                cursor = conn.cursor()
+                # Update the vehicle in the database
+                cursor.execute("""
+                    UPDATE vehicles
+                    SET vehicle_id=%s, owner_name=%s, Plate_number=%s, MOdel=%s, color=%s
+                    WHERE vehicle_id=%s
+                """, (v_id, owner, plate, model, color, vehicle["vehicle_id"]))
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                tk.messagebox.showerror("Database Error", f"Failed to update vehicle:\n{e}", parent=edit_win)
+                return
             vehicles[idx] = {"vehicle_id": v_id, "owner_name": owner, "plate_number": plate, "model": model, "color": color}
             populate_table()
             edit_win.destroy()
@@ -383,12 +407,16 @@ def run_gui():
         btn_restore.pack(pady=10)
 
     # CRUD Buttons
-    btn_frame = tk.Frame(main, bg="#f7faff")
+    btn_frame = tk.Frame(main, bg="#eaf6fb")
     btn_frame.pack(pady=(0, 10))
-    tk.Button(btn_frame, text="Add Vehicle", command=add_vehicle, bg="#1976d2", fg="white", font=("Arial", 11, "bold"), width=16).pack(side=tk.LEFT, padx=8)
-    tk.Button(btn_frame, text="Edit Selected", command=edit_vehicle, bg="#1976d2", fg="white", font=("Arial", 11, "bold"), width=16).pack(side=tk.LEFT, padx=8)
-    tk.Button(btn_frame, text="Delete Selected", command=delete_vehicle, bg="#e74c3c", fg="white", font=("Arial", 11, "bold"), width=16).pack(side=tk.LEFT, padx=8)
-    tk.Button(btn_frame, text="Show Archived", command=show_archived_vehicles, bg="#607d8b", fg="white", font=("Arial", 11, "bold"), width=16).pack(side=tk.LEFT, padx=8)
+    tk.Button(btn_frame, text="Add Vehicle", command=add_vehicle, bg="#1976d2", fg="white",
+              font=("Segoe UI", 11, "bold"), width=16, bd=0, activebackground="#1565c0").pack(side=tk.LEFT, padx=8)
+    tk.Button(btn_frame, text="Edit Selected", command=edit_vehicle, bg="#1976d2", fg="white",
+              font=("Segoe UI", 11, "bold"), width=16, bd=0, activebackground="#1565c0").pack(side=tk.LEFT, padx=8)
+    tk.Button(btn_frame, text="Delete Selected", command=delete_vehicle, bg="#e74c3c", fg="white",
+              font=("Segoe UI", 11, "bold"), width=16, bd=0, activebackground="#c0392b").pack(side=tk.LEFT, padx=8)
+    tk.Button(btn_frame, text="Show Archived", command=show_archived_vehicles, bg="#607d8b", fg="white",
+              font=("Segoe UI", 11, "bold"), width=16, bd=0, activebackground="#455a64").pack(side=tk.LEFT, padx=8)
 
     populate_table()
 
