@@ -222,6 +222,11 @@ def run_gui():
                 "INSERT INTO vehicles_archive (vehicle_id, owner_name, plate_number, model, color) VALUES (%s, %s, %s, %s, %s)",
                 (vehicle["vehicle_id"], vehicle["owner_name"], vehicle["plate_number"], vehicle["model"], vehicle["color"])
             )
+            # --- FIX: Delete related violations before deleting the vehicle ---
+            cursor.execute(
+                "DELETE FROM violations WHERE vehicle_id=%s",
+                (vehicle["vehicle_id"],)
+            )
             # Delete from main vehicles table
             cursor.execute(
                 "DELETE FROM vehicles WHERE vehicle_id=%s",
