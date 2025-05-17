@@ -1,12 +1,3 @@
-"""
-Project Objective:
-- Vehicle registration and owner details
-- Record and track violations (speeding, illegal parking, etc.)
-- Fine payment processing
-- Violation history and reports
-- License suspension and blacklist management
-- Generate violation reports
-"""
 
 import tkinter as tk
 from tkinter import ttk, BOTH, LEFT, RIGHT, Y, X, TOP, BOTTOM, Frame, Label, messagebox

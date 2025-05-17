@@ -1,7 +1,3 @@
-"""
-Project Objective:
-- License suspension and blacklist management
-"""
 
 import tkinter as tk
 from tkinter import ttk, messagebox

@@ -1,7 +1,3 @@
-"""
-Project Objective:
-- Generate violation reports
-"""
 
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -67,7 +63,7 @@ def fetch_violation_reports_from_db():
                 "fine": "",
                 "status": bl[2]
             })
-       
+        return reports  
     except Exception as e:
         messagebox.showerror("Database Error", f"Failed to fetch violation reports:\n{e}")
         return []

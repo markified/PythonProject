@@ -1,7 +1,3 @@
-"""
-Project Objective:
-- Fine payment processing
-"""
 
 import tkinter as tk
 from tkinter import ttk, messagebox

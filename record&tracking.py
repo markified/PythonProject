@@ -1,7 +1,3 @@
-"""
-Project Objective:
-- Record and track violations (speeding, illegal parking, etc.)
-"""
 
 import tkinter as tk
 from tkinter import ttk

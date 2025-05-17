@@ -1,7 +1,3 @@
-"""
-Project Objective:
-- Violation history and reports
-"""
 
 import tkinter as tk
 from tkinter import ttk, messagebox
